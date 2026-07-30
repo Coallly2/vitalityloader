@@ -1,5 +1,5 @@
 local Scripts = {
-    [3101667897] = "https://raw.githubusercontent.com/Coallly2/vitalityloader/Loader/3101667897.lua",
+    [1119466531] = "https://raw.githubusercontent.com/Coallly2/vitalityloader/Loader/3101667897.lua",
     [136107936984073] = "https://raw.githubusercontent.com/Coallly2/vitalityloader/Loader/136107936984073.lua"
 }
 
