@@ -1,1721 +1,696 @@
--- === SCRIPT PAYLOAD FOR GAME 3101667897 ===
---[[
-	VITALITY — Key System UI + Game Tabs
-	COMPLETELY STANDALONE! Black, White & Light Blue Theme
-	With Window Controls - F4 to toggle
-	PERSISTENT KEY SYSTEM - Remembers user for 24 hours
-	FIXED: MinWindow remembers position, removed ESP, added Safe tab
-]]
+-- Legend's of Speed Source!
+local CORRECT_KEY  = "VITALITYSCRIPTSISTHEBEST67" -- Change this whenever you want!
+local DISCORD_LINK = "https://discord.gg/2wdxu8ff6n"
+-- ============================================================
 
--- Console execution wrapper
-local function setupVitality()
-	-- Check if already running
-	if game:GetService("CoreGui"):FindFirstChild("VitalityUI") then
-		warn("[VITALITY] Already running!")
+local TweenService = game:GetService("TweenService")
+local UIS = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local function loadMainScript()
+	local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/fanxx04/eee/refs/heads/main/skidded.lua"))()
+
+	local Window = Library:Window({
+		Name = "Vitality Scripts", 
+		SubName = "Legends of Speed 〢 @Vitality", 
+		Logo = "rbxassetid://106850780184145"
+	})
+
+	local GamePage = Window:Page({Name = "Legends of Speed", Icon = "rbxassetid://112148279212860"})
+	local SafePage = Window:Page({Name = "Safe Mode", Icon = "rbxassetid://115398113982385"})
+
+	local Watermark = "Vitality"
+	Library:CreateSettingsPage(Window, Watermark)
+
+	local activeThreads = {}
+	local function registerThread(thread)
+		table.insert(activeThreads, thread)
+	end
+
+	--============================================================
+	-- LEGENDS OF SPEED (NORMAL FAST MODE)
+	--============================================================
+	local orbSection = GamePage:Section({Name = "Auto Collectors (Max Speed)", Side = 1, Icon = "rbxassetid://103376704722051"})
+	local raceHoopSection = GamePage:Section({Name = "Auto Races & Hoops", Side = 1, Icon = "rbxassetid://109855212076373"})
+	local miscSection = GamePage:Section({Name = "Auto Rebirth & Gifts", Side = 2, Icon = "rbxassetid://128420521375441"})
+
+	local function setupCollector(section, name, flag, eventPath, args)
+		local isRunning = false
+		local thread = nil
+
+		section:Toggle({
+			Name = name,
+			Flag = flag,
+			Callback = function(state)
+				isRunning = state
+				if state then
+					thread = task.spawn(function()
+						while isRunning do
+							pcall(function()
+								local current = ReplicatedStorage
+								for _, path in ipairs(eventPath) do
+									current = current:FindFirstChild(path)
+								end
+								if current then
+									current:FireServer(unpack(args))
+								end
+							end)
+							RunService.Heartbeat:Wait()
+						end
+					end)
+					registerThread(thread)
+				else
+					if thread then pcall(function() task.cancel(thread) end) thread = nil end
+				end
+			end
+		})
+	end
+
+	-- Orbs & Gems
+	setupCollector(orbSection, "Auto Red Orb (+40 Speed)", "AutoRedOrb", {"rEvents", "orbEvent"}, {"collectOrb", "Red Orb", "City"})
+	setupCollector(orbSection, "Auto Blue Orb (+15 Speed)", "AutoBlueOrb", {"rEvents", "orbEvent"}, {"collectOrb", "Blue Orb", "City"})
+	setupCollector(orbSection, "Auto Orange Orb (+10 Speed)", "AutoOrangeOrb", {"rEvents", "orbEvent"}, {"collectOrb", "Orange Orb", "City"})
+	setupCollector(orbSection, "Auto Yellow Orb (+1 EXP)", "AutoYellowOrb", {"rEvents", "orbEvent"}, {"collectOrb", "Yellow Orb", "City"})
+	setupCollector(orbSection, "Auto Gem Collector", "AutoGem", {"rEvents", "orbEvent"}, {"collectOrb", "Gem", "City"})
+
+	-- Auto Hoops
+	local isHooping = false
+	local hoopThread = nil
+	raceHoopSection:Toggle({
+		Name = "Auto Collect All Hoops",
+		Flag = "AutoHoops",
+		Callback = function(state)
+			isHooping = state
+			if state then
+				hoopThread = task.spawn(function()
+					while isHooping do
+						pcall(function()
+							local hoopsFolder = workspace:FindFirstChild("Hoops") or workspace:FindFirstChild("HoopFolder")
+							if hoopsFolder then
+								for _, hoop in ipairs(hoopsFolder:GetChildren()) do
+									if not isHooping then break end
+									if hoop:IsA("BasePart") or hoop:FindFirstChild("TouchInterest") then
+										firetouchinterest(player.Character.HumanoidRootPart, hoop, 0)
+										firetouchinterest(player.Character.HumanoidRootPart, hoop, 1)
+									end
+								end
+							end
+						end)
+						RunService.Heartbeat:Wait()
+					end
+				end)
+				registerThread(hoopThread)
+			else
+				if hoopThread then pcall(function() task.cancel(hoopThread) end) hoopThread = nil end
+			end
+		end
+	})
+
+	-- Auto Join & Win Race
+	local isRacing = false
+	local raceThread = nil
+	raceHoopSection:Toggle({
+		Name = "Auto Join & Win Races",
+		Flag = "AutoRaceWin",
+		Callback = function(state)
+			isRacing = state
+			if state then
+				raceThread = task.spawn(function()
+					while isRacing do
+						pcall(function()
+							local joinEvent = ReplicatedStorage:FindFirstChild("rEvents"):FindFirstChild("raceEvent")
+							if joinEvent then
+								joinEvent:FireServer("joinRace")
+							end
+							local finishTouch = workspace:FindFirstChild("RaceEnd") or workspace:FindFirstChild("FinishLine")
+							if finishTouch and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+								firetouchinterest(player.Character.HumanoidRootPart, finishTouch, 0)
+								firetouchinterest(player.Character.HumanoidRootPart, finishTouch, 1)
+							end
+						end)
+						task.wait(0.5)
+					end
+				end)
+				registerThread(raceThread)
+			else
+				if raceThread then pcall(function() task.cancel(raceThread) end) raceThread = nil end
+			end
+		end
+	})
+
+	-- Rebirth & Gifts
+	setupCollector(miscSection, "Auto Rebirth", "AutoRebirth", {"rEvents", "rebirthEvent"}, {"rebirthRequest"})
+
+	local isClaimingGifts = false
+	local giftThread = nil
+	miscSection:Toggle({
+		Name = "Auto Claim Free Gifts",
+		Flag = "AutoClaimGifts",
+		Callback = function(state)
+			isClaimingGifts = state
+			if state then
+				giftThread = task.spawn(function()
+					while isClaimingGifts do
+						pcall(function()
+							local ev = ReplicatedStorage:FindFirstChild("rEvents"):FindFirstChild("freeGiftClaimRemote")
+							if ev then
+								for i = 1, 8 do
+									ev:InvokeServer("claimGift", i)
+								end
+							end
+						end)
+						task.wait(1)
+					end
+				end)
+				registerThread(giftThread)
+			else
+				if giftThread then pcall(function() task.cancel(giftThread) end) giftThread = nil end
+			end
+		end
+	})
+
+	--============================================================
+	-- LEGENDS OF SPEED (SAFE MODE - 0.1s DELAY)
+	--============================================================
+	local safeOrbSection = SafePage:Section({Name = "Safe Collectors (0.1s)", Side = 1, Icon = "rbxassetid://103376704722051"})
+	local safeMiscSection = SafePage:Section({Name = "Safe Rebirth", Side = 2, Icon = "rbxassetid://128420521375441"})
+
+	local function setupSafeCollector(section, name, flag, eventPath, args)
+		local isRunning = false
+		local thread = nil
+
+		section:Toggle({
+			Name = name,
+			Flag = flag,
+			Callback = function(state)
+				isRunning = state
+				if state then
+					thread = task.spawn(function()
+						while isRunning do
+							pcall(function()
+								local current = ReplicatedStorage
+								for _, path in ipairs(eventPath) do
+									current = current:FindFirstChild(path)
+								end
+								if current then
+									current:FireServer(unpack(args))
+								end
+							end)
+							task.wait(0.1)
+						end
+					end)
+					registerThread(thread)
+				else
+					if thread then pcall(function() task.cancel(thread) end) thread = nil end
+				end
+			end
+		})
+	end
+
+	setupSafeCollector(safeOrbSection, "Auto Red Orb (+40 Speed)", "SafeRedOrb", {"rEvents", "orbEvent"}, {"collectOrb", "Red Orb", "City"})
+	setupSafeCollector(safeOrbSection, "Auto Gem", "SafeGem", {"rEvents", "orbEvent"}, {"collectOrb", "Gem", "City"})
+	setupSafeCollector(safeOrbSection, "Auto Orange Orb (+10 Speed)", "SafeOrangeOrb", {"rEvents", "orbEvent"}, {"collectOrb", "Orange Orb", "City"})
+	setupSafeCollector(safeOrbSection, "Auto Yellow Orb (+1 EXP)", "SafeYellowOrb", {"rEvents", "orbEvent"}, {"collectOrb", "Yellow Orb", "City"})
+
+	setupSafeCollector(safeMiscSection, "Auto Rebirth", "SafeRebirth", {"rEvents", "rebirthEvent"}, {"rebirthRequest"})
+end
+
+local existing = playerGui:FindFirstChild("VitalityUI")
+if existing then
+	existing:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "VitalityUI"
+screenGui.Parent = playerGui
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame")
+frame.Parent = screenGui
+frame.BackgroundColor3 = Color3.fromRGB(11, 12, 16)
+frame.Size = UDim2.new(0, 594, 0, 354)
+frame.AnchorPoint = Vector2.new(0.5, 0.5)
+frame.Position = UDim2.new(0.5, 0, 0.5, 0)
+frame.ClipsDescendants = true
+frame.BorderSizePixel = 0
+
+local frameCorner = Instance.new("UICorner")
+frameCorner.Parent = frame
+frameCorner.CornerRadius = UDim.new(0, 11)
+
+local close = Instance.new("TextButton")
+close.Parent = frame
+close.BackgroundTransparency = 1
+close.Position = UDim2.new(1, -35, 0, 5)
+close.Size = UDim2.new(0, 30, 0, 25)
+close.Font = Enum.Font.GothamBold
+close.Text = "X"
+close.TextColor3 = Color3.fromRGB(170, 170, 170)
+close.TextSize = 18
+close.ZIndex = 20
+close.BorderSizePixel = 0
+
+local pagesFolder = Instance.new("Folder")
+pagesFolder.Name = "Pages"
+pagesFolder.Parent = frame
+
+local function createPage(name)
+	local page = Instance.new("Frame")
+	page.Name = name
+	page.Parent = pagesFolder
+	page.BackgroundTransparency = 1
+	page.Size = UDim2.new(1, 0, 1, 0)
+	page.Position = UDim2.new(0, 0, 0, 0)
+	page.Visible = false
+	page.BorderSizePixel = 0
+	return page
+end
+
+local getKeyPage = createPage("GetKeyPage")
+local redeemPage = createPage("RedeemPage")
+local loadingPage = createPage("LoadingPage")
+
+local currentPage = nil
+local switching = false
+local loadingAnimationId = 0
+
+local tweenInInfo = TweenInfo.new(0.28, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+local tweenOutInfo = TweenInfo.new(0.22, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+
+local function showPage(newPage, direction)
+	if switching or currentPage == newPage then
 		return
 	end
-	
-	local Players = game:GetService("Players")
-	local TweenService = game:GetService("TweenService")
-	local UserInputService = game:GetService("UserInputService")
-	local RunService = game:GetService("RunService")
-	local CoreGui = game:GetService("CoreGui")
-	local ReplicatedStorage = game:GetService("ReplicatedStorage")
-	local HttpService = game:GetService("HttpService")
-	
-	local LocalPlayer = Players.LocalPlayer
-	if not LocalPlayer then
-		warn("[VITALITY] No LocalPlayer found! Trying again...")
-		task.wait(1)
-		LocalPlayer = Players.LocalPlayer
-		if not LocalPlayer then
-			error("[VITALITY] Could not find LocalPlayer!")
-		end
+
+	switching = true
+
+	if not currentPage then
+		newPage.Visible = true
+		newPage.Position = UDim2.new(0, 0, 0, 0)
+		currentPage = newPage
+		switching = false
+		return
 	end
-	
-	--============================================================
-	-- CONFIG - CHANGE THIS KEY WHENEVER YOU WANT!
-	--============================================================
-	local MASTER_KEY = "VITALITYSCRIPTSISTHEBEST67"
-	local DISCORD_LINK = "https://discord.gg/2wdxu8ff6n"
-	local DAY_SECONDS = 24 * 60 * 60
-	local GAME_NAME = "Legend's of Speed"
-	
-	--============================================================
-	-- PERSISTENT STORAGE
-	--============================================================
-	local function saveUserData(data)
-		local success, err = pcall(function()
-			local json = HttpService:JSONEncode(data)
-			writefile("Vitality_UserData.json", json)
-		end)
-		return success
-	end
-	
-	local function loadUserData()
-		local success, data = pcall(function()
-			if isfile("Vitality_UserData.json") then
-				local json = readfile("Vitality_UserData.json")
-				return HttpService:JSONDecode(json)
-			end
-		end)
-		if success and data then
-			return data
-		end
-		return nil
-	end
-	
-	-- Session state
-	local sessionUnlockExpiry = nil
-	local userData = loadUserData() or {}
-	
-	-- MinWindow position storage
-	local minWindowPosition = userData.minWindowPosition or {X = 0.5, Y = 0.5, OffsetX = -30, OffsetY = -30}
-	
-	-- Check if user has valid unlock
-	if userData.userId and userData.userId == LocalPlayer.UserId and userData.expiry and userData.expiry > os.time() then
-		sessionUnlockExpiry = userData.expiry
-	end
-	
-	-- Auto collect states
-	local autoCollectors = {
-		plus40 = { running = false, connection = nil, count = 0, name = "+40" },
-		gem = { running = false, connection = nil, count = 0, name = "Gem" },
-		plus10 = { running = false, connection = nil, count = 0, name = "+10" },
-		exp = { running = false, connection = nil, count = 0, name = "EXP" },
-		purpleCrystal = { running = false, connection = nil, count = 0, name = "Purple Crystal" },
-		lightningCrystal = { running = false, connection = nil, count = 0, name = "Lightning Crystal" },
-		redCrystal = { running = false, connection = nil, count = 0, name = "Red Crystal" },
-		rebirth = { running = false, connection = nil, count = 0, name = "Rebirth" },
-		claimGift = { running = false, connection = nil, count = 0, name = "Claim Gift" },
-	}
-	
-	-- Safe mode auto collectors (with cooldown)
-	local safeCollectors = {
-		plus40 = { running = false, connection = nil, count = 0, name = "+40", lastFire = 0, cooldown = 0.1 },
-		gem = { running = false, connection = nil, count = 0, name = "Gem", lastFire = 0, cooldown = 0.1 },
-		plus10 = { running = false, connection = nil, count = 0, name = "+10", lastFire = 0, cooldown = 0.1 },
-		exp = { running = false, connection = nil, count = 0, name = "EXP", lastFire = 0, cooldown = 0.1 },
-		purpleCrystal = { running = false, connection = nil, count = 0, name = "Purple Crystal", lastFire = 0, cooldown = 0.1 },
-		lightningCrystal = { running = false, connection = nil, count = 0, name = "Lightning Crystal", lastFire = 0, cooldown = 0.1 },
-		redCrystal = { running = false, connection = nil, count = 0, name = "Red Crystal", lastFire = 0, cooldown = 0.1 },
-		rebirth = { running = false, connection = nil, count = 0, name = "Rebirth", lastFire = 0, cooldown = 0.1 },
-		claimGift = { running = false, connection = nil, count = 0, name = "Claim Gift", lastFire = 0, cooldown = 0.1 },
-	}
-	
-	-- Window state
-	local isMinimized = false
-	local windowSize = UDim2.new(0, 750, 0, 520)
-	
-	--============================================================
-	-- THEME
-	--============================================================
-	local Theme = {
-		Bg = Color3.fromRGB(0, 0, 0),
-		Panel = Color3.fromRGB(20, 20, 25),
-		Panel2 = Color3.fromRGB(30, 30, 38),
-		Panel3 = Color3.fromRGB(40, 40, 50),
-		Line = Color3.fromRGB(60, 65, 80),
-		Ice = Color3.fromRGB(200, 230, 255),
-		IceBright = Color3.fromRGB(100, 200, 255),
-		IceDark = Color3.fromRGB(50, 100, 150),
-		White = Color3.fromRGB(255, 255, 255),
-		Dim = Color3.fromRGB(150, 160, 180),
-		Dark = Color3.fromRGB(10, 10, 15),
-		Danger = Color3.fromRGB(255, 80, 80),
-		Good = Color3.fromRGB(80, 255, 180),
-		Gold = Color3.fromRGB(255, 215, 0),
-		Orange = Color3.fromRGB(255, 165, 0),
-		Purple = Color3.fromRGB(170, 0, 255),
-		Pink = Color3.fromRGB(255, 105, 180),
-	}
-	
-	--============================================================
-	-- HELPERS
-	--============================================================
-	local function create(className, props, children)
-		local inst = Instance.new(className)
-		for k, v in pairs(props or {}) do
-			inst[k] = v
-		end
-		for _, child in ipairs(children or {}) do
-			child.Parent = inst
-		end
-		return inst
-	end
-	
-	local function corner(radius)
-		return create("UICorner", { CornerRadius = UDim.new(0, radius or 8) })
-	end
-	
-	local function stroke(color, thickness)
-		return create("UIStroke", {
-			Color = color or Theme.Line,
-			Thickness = thickness or 1,
-			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-		})
-	end
-	
-	local function tween(inst, props, time, style)
-		local t = TweenService:Create(inst, TweenInfo.new(time or 0.2, style or Enum.EasingStyle.Quad), props)
-		t:Play()
-		return t
-	end
-	
-	local function formatHMS(seconds)
-		seconds = math.max(0, math.floor(seconds))
-		local h = math.floor(seconds / 3600)
-		local m = math.floor((seconds % 3600) / 60)
-		local s = seconds % 60
-		return string.format("%02d:%02d:%02d", h, m, s)
-	end
-	
-	-- Toast system
-	local ToastHolder
-	local toastQueue = {}
-	local isShowingToast = false
-	
-	local function processToastQueue()
-		if isShowingToast or #toastQueue == 0 then return end
-		isShowingToast = true
-		local data = table.remove(toastQueue, 1)
-		
-		local toast = create("Frame", {
-			BackgroundColor3 = Theme.Panel,
-			Size = UDim2.new(1, 0, 0, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-			ZIndex = 51,
-		}, {
-			corner(10),
-			stroke(data.isError and Theme.Danger or Theme.IceBright, 1),
-			create("UIPadding", {
-				PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10),
-				PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14),
-			}),
-			create("TextLabel", {
-				BackgroundTransparency = 1,
-				Size = UDim2.new(1, 0, 0, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				Text = data.message,
-				TextColor3 = data.isError and Theme.Danger or Theme.Ice,
-				Font = Enum.Font.GothamMedium,
-				TextSize = 13,
-				TextWrapped = true,
-			}),
-		})
-		toast.Parent = ToastHolder
-		toast.BackgroundTransparency = 1
-		toast.Position = UDim2.new(0, 0, 0, -10)
-		tween(toast, { BackgroundTransparency = 0, Position = UDim2.new(0, 0, 0, 0) }, 0.25)
-		
-		task.delay(2.6, function()
-			if toast and toast.Parent then
-				tween(toast, { BackgroundTransparency = 1 }, 0.3)
-				task.delay(0.3, function()
-					if toast then toast:Destroy() end
-					isShowingToast = false
-					task.spawn(processToastQueue)
-				end)
-			end
-		end)
-	end
-	
-	local function showToast(message, isError)
-		table.insert(toastQueue, { message = message, isError = isError or false })
-		if not isShowingToast then
-			task.spawn(processToastQueue)
-		end
-	end
-	
-	--============================================================
-	-- SCREEN GUI ROOT
-	--============================================================
-	local ScreenGui = create("ScreenGui", {
-		Name = "VitalityUI",
-		ResetOnSpawn = false,
-		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-		DisplayOrder = 100,
+
+	local oldPage = currentPage
+	local offset = direction == "right" and 1 or -1
+
+	newPage.Visible = true
+	newPage.Position = UDim2.new(offset, 0, 0, 0)
+
+	local outTween = TweenService:Create(oldPage, tweenOutInfo, {
+		Position = UDim2.new(-offset, 0, 0, 0)
 	})
-	
-	local success, err = pcall(function()
-		ScreenGui.Parent = CoreGui
-	end)
-	if not success then
-		ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-	end
-	
-	--============================================================
-	-- MAIN WINDOW
-	--============================================================
-	local MainWindow = create("Frame", {
-		Name = "MainWindow",
-		BackgroundColor3 = Theme.Dark,
-		Size = windowSize,
-		Position = UDim2.new(0.5, -375, 0.5, -260),
-		ZIndex = 1,
-	}, {
-		corner(12),
-		stroke(Theme.IceBright, 1),
+
+	local inTween = TweenService:Create(newPage, tweenInInfo, {
+		Position = UDim2.new(0, 0, 0, 0)
 	})
-	MainWindow.Parent = ScreenGui
-	
-	--============================================================
-	-- MINIMIZED WINDOW (remembers position)
-	--============================================================
-	local MinWindow = create("Frame", {
-		Name = "MinWindow",
-		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-		Size = UDim2.new(0, 60, 0, 60),
-		Position = UDim2.new(minWindowPosition.X, minWindowPosition.OffsetX, minWindowPosition.Y, minWindowPosition.OffsetY),
-		ZIndex = 100,
-		Visible = false,
-	}, {
-		corner(30),
-		stroke(Theme.IceBright, 2),
-	})
-	MinWindow.Parent = ScreenGui
-	
-	-- Use a TextButton for the clickable area
-	local MinWindowBtn = create("TextButton", {
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 1, 0),
-		Text = "V",
-		Font = Enum.Font.GothamBlack,
-		TextSize = 32,
-		TextColor3 = Color3.fromRGB(255, 255, 255),
-		TextScaled = true,
-		AutoButtonColor = false,
-	})
-	MinWindowBtn.Parent = MinWindow
-	
-	-- Make minimized window draggable
-	local minDragging = false
-	local minDragStart = nil
-	local minStartPos = nil
-	
-	MinWindowBtn.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			minDragging = true
-			minDragStart = input.Position
-			minStartPos = MinWindow.Position
-		end
-	end)
-	
-	MinWindowBtn.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			minDragging = false
-			-- Save position when drag ends
-			if minStartPos then
-				minWindowPosition = {
-					X = MinWindow.Position.X.Scale,
-					Y = MinWindow.Position.Y.Scale,
-					OffsetX = MinWindow.Position.X.Offset,
-					OffsetY = MinWindow.Position.Y.Offset
-				}
-				userData.minWindowPosition = minWindowPosition
-				saveUserData(userData)
-			end
-		end
-	end)
-	
-	UserInputService.InputChanged:Connect(function(input)
-		if minDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-			local delta = input.Position - minDragStart
-			MinWindow.Position = UDim2.new(
-				minStartPos.X.Scale,
-				minStartPos.X.Offset + delta.X,
-				minStartPos.Y.Scale,
-				minStartPos.Y.Offset + delta.Y
-			)
-		end
-	end)
-	
-	-- Click minimized window to open
-	MinWindowBtn.MouseButton1Click:Connect(function()
-		MinWindow.Visible = false
-		MainWindow.Visible = true
-		isMinimized = false
-		for _, child in pairs(MainWindow:GetChildren()) do
-			if child ~= TitleBar then
-				child.Visible = true
-			end
-		end
-	end)
-	
-	--============================================================
-	-- TITLE BAR
-	--============================================================
-	local TitleBar = create("Frame", {
-		BackgroundColor3 = Theme.Panel,
-		Size = UDim2.new(1, 0, 0, 36),
-		Position = UDim2.new(0, 0, 0, 0),
-		ZIndex = 2,
-	})
-	TitleBar.Parent = MainWindow
-	
-	-- Make the entire title bar draggable
-	local dragging = false
-	local dragStart = nil
-	local startPos = nil
-	
-	TitleBar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			local mousePos = input.Position
-			local absPos = TitleBar.AbsolutePosition
-			local absSize = TitleBar.AbsoluteSize
-			if mousePos.X < absPos.X + absSize.X - 70 then
-				dragging = true
-				dragStart = input.Position
-				startPos = MainWindow.Position
-			end
-		end
-	end)
-	
-	TitleBar.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = false
-		end
-	end)
-	
-	UserInputService.InputChanged:Connect(function(input)
-		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-			local delta = input.Position - dragStart
-			MainWindow.Position = UDim2.new(
-				startPos.X.Scale,
-				startPos.X.Offset + delta.X,
-				startPos.Y.Scale,
-				startPos.Y.Offset + delta.Y
-			)
-		end
-	end)
-	
-	-- Title text
-	create("TextLabel", {
-		BackgroundTransparency = 1,
-		Size = UDim2.new(0.7, 0, 1, 0),
-		Position = UDim2.new(0, 12, 0, 0),
-		Text = "VITALITY · " .. GAME_NAME,
-		Font = Enum.Font.GothamBold,
-		TextSize = 14,
-		TextColor3 = Theme.White,
-		TextXAlignment = Enum.TextXAlignment.Left,
-	}).Parent = TitleBar
-	
-	--============================================================
-	-- WINDOW CONTROLS (Minimize and Close only)
-	--============================================================
-	local ControlFrame = create("Frame", {
-		BackgroundTransparency = 1,
-		Size = UDim2.new(0, 70, 1, 0),
-		Position = UDim2.new(1, -75, 0, 0),
-	})
-	ControlFrame.Parent = TitleBar
-	
-	create("UIListLayout", {
-		FillDirection = Enum.FillDirection.Horizontal,
-		Padding = UDim.new(0, 4),
-		HorizontalAlignment = Enum.HorizontalAlignment.Right,
-		VerticalAlignment = Enum.VerticalAlignment.Center,
-	}).Parent = ControlFrame
-	
-	-- Minimize Button (-)
-	local MinBtn = create("TextButton", {
-		BackgroundColor3 = Theme.Panel2,
-		Size = UDim2.new(0, 32, 0, 28),
-		Text = "−",
-		Font = Enum.Font.GothamBold,
-		TextSize = 20,
-		TextColor3 = Theme.White,
-		AutoButtonColor = false,
-	}, { corner(6), stroke(Theme.Line, 1) })
-	MinBtn.Parent = ControlFrame
-	
-	-- Close Button (X)
-	local CloseBtn = create("TextButton", {
-		BackgroundColor3 = Theme.Panel2,
-		Size = UDim2.new(0, 32, 0, 28),
-		Text = "✕",
-		Font = Enum.Font.GothamBold,
-		TextSize = 16,
-		TextColor3 = Theme.White,
-		AutoButtonColor = false,
-	}, { corner(6), stroke(Theme.Line, 1) })
-	CloseBtn.Parent = ControlFrame
-	
-	-- Hover effects
-	MinBtn.MouseEnter:Connect(function() MinBtn.BackgroundColor3 = Theme.Panel3 end)
-	MinBtn.MouseLeave:Connect(function() MinBtn.BackgroundColor3 = Theme.Panel2 end)
-	CloseBtn.MouseEnter:Connect(function() CloseBtn.BackgroundColor3 = Theme.Danger end)
-	CloseBtn.MouseLeave:Connect(function() CloseBtn.BackgroundColor3 = Theme.Panel2 end)
-	
-	-- Minimize function
-	MinBtn.MouseButton1Click:Connect(function()
-		isMinimized = true
-		MainWindow.Visible = false
-		MinWindow.Visible = true
-		-- Use saved position
-		MinWindow.Position = UDim2.new(minWindowPosition.X, minWindowPosition.OffsetX, minWindowPosition.Y, minWindowPosition.OffsetY)
-		showToast("Minimized - Click the V to open")
-	end)
-	
-	-- Close (hide window)
-	CloseBtn.MouseButton1Click:Connect(function()
-		MainWindow.Visible = false
-		MinWindow.Visible = false
-		for _, collector in pairs(autoCollectors) do
-			if collector.running then
-				collector.running = false
-				if collector.connection then
-					collector.connection:Disconnect()
-					collector.connection = nil
-				end
-			end
-		end
-		for _, collector in pairs(safeCollectors) do
-			if collector.running then
-				collector.running = false
-				if collector.connection then
-					collector.connection:Disconnect()
-					collector.connection = nil
-				end
-			end
-		end
-		showToast("Vitality closed - Press F4 to reopen")
-	end)
-	
-	--============================================================
-	-- TOAST SYSTEM
-	--============================================================
-	ToastHolder = create("Frame", {
-		Name = "ToastHolder",
-		BackgroundTransparency = 1,
-		Size = UDim2.new(0, 360, 1, 0),
-		Position = UDim2.new(0.5, -180, 0, 20),
-		ZIndex = 50,
-	}, {
-		create("UIListLayout", {
-			HorizontalAlignment = Enum.HorizontalAlignment.Center,
-			Padding = UDim.new(0, 8),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-		}),
-	})
-	ToastHolder.Parent = ScreenGui
-	
-	--============================================================
-	-- CONTENT CONTAINER
-	--============================================================
-	local ContentContainer = create("ScrollingFrame", {
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 1, -36),
-		Position = UDim2.new(0, 0, 0, 36),
-		CanvasSize = UDim2.new(0, 0, 0, 0),
-		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		ScrollBarThickness = 4,
-	}, {
-		create("UIPadding", {
-			PaddingTop = UDim.new(0, 12),
-			PaddingBottom = UDim.new(0, 12),
-			PaddingLeft = UDim.new(0, 12),
-			PaddingRight = UDim.new(0, 12),
-		}),
-		create("UIListLayout", { 
-			Padding = UDim.new(0, 8), 
-			SortOrder = Enum.SortOrder.LayoutOrder,
-		}),
-	})
-	ContentContainer.Parent = MainWindow
-	
-	--============================================================
-	-- GATE SCREEN
-	--============================================================
-	local GateFrame = create("Frame", {
-		Name = "Gate",
-		BackgroundColor3 = Theme.Dark,
-		Size = UDim2.new(1, 0, 1, 0),
-	})
-	GateFrame.Parent = ContentContainer
-	
-	local GateCard = create("Frame", {
-		BackgroundColor3 = Theme.Panel,
-		Size = UDim2.new(1, 0, 0, 380),
-		AutomaticSize = Enum.AutomaticSize.Y,
-	}, {
-		corner(10),
-		stroke(Theme.Line, 1),
-		create("UIPadding", {
-			PaddingTop = UDim.new(0, 20), PaddingBottom = UDim.new(0, 16),
-			PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20),
-		}),
-		create("UIListLayout", {
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			HorizontalAlignment = Enum.HorizontalAlignment.Center,
-			Padding = UDim.new(0, 8),
-		}),
-	})
-	GateCard.Parent = GateFrame
-	
-	create("TextLabel", {
-		LayoutOrder = 1,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 34),
-		Text = "VITALITY",
-		Font = Enum.Font.GothamBlack,
-		TextSize = 28,
-		TextColor3 = Theme.White,
-	}).Parent = GateCard
-	
-	create("TextLabel", {
-		LayoutOrder = 2,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 20),
-		Text = "Powered by " .. GAME_NAME,
-		Font = Enum.Font.Gotham,
-		TextSize = 12,
-		TextColor3 = Theme.IceBright,
-	}).Parent = GateCard
-	
-	create("TextLabel", {
-		LayoutOrder = 3,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 28),
-		Text = "Enter your key to unlock 24-hour access",
-		Font = Enum.Font.Gotham,
-		TextSize = 12,
-		TextColor3 = Theme.Dim,
-		TextWrapped = true,
-	}).Parent = GateCard
-	
-	local KeyBox = create("TextBox", {
-		LayoutOrder = 4,
-		BackgroundColor3 = Theme.Panel2,
-		Size = UDim2.new(1, 0, 0, 38),
-		PlaceholderText = "Enter your key...",
-		Text = "",
-		TextColor3 = Theme.White,
-		PlaceholderColor3 = Theme.Dim,
-		Font = Enum.Font.Code,
-		TextSize = 14,
-		ClearTextOnFocus = false,
-	}, {
-		corner(8),
-		stroke(Theme.Line, 1),
-		create("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }),
-	})
-	KeyBox.Parent = GateCard
-	
-	local ErrorLabel = create("TextLabel", {
-		LayoutOrder = 5,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 18),
-		Text = "",
-		TextColor3 = Theme.Danger,
-		Font = Enum.Font.Gotham,
-		TextSize = 12,
-		Visible = false,
-	})
-	ErrorLabel.Parent = GateCard
-	
-	local UnlockBtn = create("TextButton", {
-		LayoutOrder = 6,
-		BackgroundColor3 = Theme.IceBright,
-		Size = UDim2.new(1, 0, 0, 40),
-		Text = "Unlock Access",
-		Font = Enum.Font.GothamBold,
-		TextSize = 15,
-		TextColor3 = Color3.fromRGB(0, 0, 0),
-		AutoButtonColor = false,
-	}, {
-		corner(8),
-	})
-	UnlockBtn.Parent = GateCard
-	
-	create("TextLabel", {
-		LayoutOrder = 7,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 14),
-		Text = "or",
-		Font = Enum.Font.Gotham,
-		TextSize = 11,
-		TextColor3 = Theme.Dim,
-	}).Parent = GateCard
-	
-	local DiscordBtn = create("TextButton", {
-		LayoutOrder = 8,
-		BackgroundColor3 = Theme.Panel2,
-		Size = UDim2.new(1, 0, 0, 36),
-		Text = "Join Discord for a Free Key!",
-		Font = Enum.Font.GothamMedium,
-		TextSize = 13,
-		TextColor3 = Theme.Ice,
-		AutoButtonColor = false,
-	}, {
-		corner(8),
-		stroke(Theme.Line, 1),
-	})
-	DiscordBtn.Parent = GateCard
-	
-	local ManageLabel = create("TextButton", {
-		LayoutOrder = 9,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 22),
-		Text = "Manage access key →",
-		Font = Enum.Font.Gotham,
-		TextSize = 11,
-		TextColor3 = Theme.Dim,
-		AutoButtonColor = false,
-	})
-	ManageLabel.Parent = GateCard
-	
-	create("TextLabel", {
-		LayoutOrder = 10,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 18),
-		Text = "● SYSTEM READY",
-		Font = Enum.Font.Code,
-		TextSize = 10,
-		TextColor3 = Theme.Good,
-	}).Parent = GateCard
-	
-	--============================================================
-	-- MANAGE KEY MODAL
-	--============================================================
-	local ModalOverlay = create("Frame", {
-		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-		BackgroundTransparency = 0.5,
-		Size = UDim2.new(1, 0, 1, 0),
-		Visible = false,
-		ZIndex = 10,
-	})
-	ModalOverlay.Parent = MainWindow
-	
-	local ModalBox = create("Frame", {
-		BackgroundColor3 = Theme.Panel,
-		Size = UDim2.new(0, 320, 0, 180),
-		Position = UDim2.new(0.5, -160, 0.5, -90),
-		ZIndex = 11,
-	}, {
-		corner(12),
-		stroke(Theme.IceBright, 1),
-		create("UIPadding", {
-			PaddingTop = UDim.new(0, 18), PaddingBottom = UDim.new(0, 14),
-			PaddingLeft = UDim.new(0, 18), PaddingRight = UDim.new(0, 18),
-		}),
-		create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
-	})
-	ModalBox.Parent = ModalOverlay
-	
-	create("TextLabel", {
-		LayoutOrder = 1, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 22),
-		Text = "Manage Access Key", Font = Enum.Font.GothamBold, TextSize = 16,
-		TextColor3 = Theme.White,
-	}).Parent = ModalBox
-	
-	create("TextLabel", {
-		LayoutOrder = 2, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 28),
-		Text = "Update the master key for all users.",
-		Font = Enum.Font.Gotham, TextSize = 11, TextColor3 = Theme.Dim,
-		TextWrapped = true,
-	}).Parent = ModalBox
-	
-	local NewKeyBox = create("TextBox", {
-		LayoutOrder = 3,
-		BackgroundColor3 = Theme.Panel2,
-		Size = UDim2.new(1, 0, 0, 34),
-		Text = "",
-		PlaceholderText = "Enter new key",
-		TextColor3 = Theme.White,
-		Font = Enum.Font.Code,
-		TextSize = 13,
-		ClearTextOnFocus = false,
-	}, {
-		corner(8), stroke(Theme.Line, 1),
-		create("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }),
-	})
-	NewKeyBox.Parent = ModalBox
-	
-	local ModalButtonRow = create("Frame", {
-		LayoutOrder = 4,
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, 0, 0, 34),
-	}, {
-		create("UIListLayout", {
-			FillDirection = Enum.FillDirection.Horizontal,
-			Padding = UDim.new(0, 8),
-		}),
-	})
-	ModalButtonRow.Parent = ModalBox
-	
-	local CancelBtn = create("TextButton", {
-		BackgroundColor3 = Theme.Panel2,
-		Size = UDim2.new(0.5, -4, 1, 0),
-		Text = "Cancel", Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = Theme.Dim,
-		AutoButtonColor = false,
-	}, { corner(8), stroke(Theme.Line, 1) })
-	CancelBtn.Parent = ModalButtonRow
-	
-	local SaveKeyBtn = create("TextButton", {
-		BackgroundColor3 = Theme.IceBright,
-		Size = UDim2.new(0.5, -4, 1, 0),
-		Text = "Save Key", Font = Enum.Font.GothamBold, TextSize = 13,
-		TextColor3 = Color3.fromRGB(0, 0, 0),
-		AutoButtonColor = false,
-	}, { corner(8) })
-	SaveKeyBtn.Parent = ModalButtonRow
-	
-	--============================================================
-	-- DASHBOARD
-	--============================================================
-	local Dashboard = create("Frame", {
-		Name = "Dashboard",
-		BackgroundColor3 = Theme.Dark,
-		Size = UDim2.new(1, 0, 1, 0),
-		Visible = false,
-	})
-	Dashboard.Parent = ContentContainer
-	
-	local CountdownLabel = create("TextLabel", {
-		BackgroundColor3 = Theme.Panel2,
-		Size = UDim2.new(1, -24, 0, 28),
-		Position = UDim2.new(0, 12, 0, 6),
-		Text = "KEY ACTIVE · 24:00:00",
-		Font = Enum.Font.Code,
-		TextSize = 12,
-		TextColor3 = Theme.Ice,
-	}, { corner(8), stroke(Theme.Line, 1) })
-	CountdownLabel.Parent = Dashboard
-	
-	--============================================================
-	-- TAB SYSTEM
-	--============================================================
-	local TabBar = create("Frame", {
-		BackgroundColor3 = Theme.Panel,
-		Size = UDim2.new(1, -24, 0, 34),
-		Position = UDim2.new(0, 12, 0, 42),
-	}, {
-		corner(8),
-		stroke(Theme.Line, 1),
-	})
-	TabBar.Parent = Dashboard
-	
-	local TabLayout = create("UIListLayout", {
-		FillDirection = Enum.FillDirection.Horizontal,
-		Padding = UDim.new(0, 0),
-		SortOrder = Enum.SortOrder.LayoutOrder,
-	})
-	TabLayout.Parent = TabBar
-	
-	local Tabs = {}
-	local ActiveTab = nil
-	
-	local function switchTab(tabName)
-		for name, tab in pairs(Tabs) do
-			if name == tabName then
-				tab.Button.BackgroundColor3 = Theme.Panel2
-				tab.Button.TextColor3 = Theme.IceBright
-				tab.Content.Visible = true
-				ActiveTab = name
-			else
-				tab.Button.BackgroundColor3 = Theme.Panel
-				tab.Button.TextColor3 = Theme.Dim
-				tab.Content.Visible = false
-			end
-		end
-	end
-	
-	local function createTab(name, layoutOrder)
-		local btn = create("TextButton", {
-			LayoutOrder = layoutOrder,
-			BackgroundColor3 = Theme.Panel,
-			Size = UDim2.new(0, 120, 1, 0),
-			Text = name,
-			Font = Enum.Font.GothamBold,
-			TextSize = 12,
-			TextColor3 = Theme.Dim,
-			AutoButtonColor = false,
-		})
-		btn.Parent = TabBar
-		
-		local content = create("ScrollingFrame", {
-			BackgroundTransparency = 1,
-			Size = UDim2.new(1, -24, 1, -84),
-			Position = UDim2.new(0, 12, 0, 84),
-			CanvasSize = UDim2.new(0, 0, 0, 0),
-			AutomaticCanvasSize = Enum.AutomaticSize.Y,
-			ScrollBarThickness = 4,
-			Visible = false,
-		}, {
-			create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
-		})
-		content.Parent = Dashboard
-		
-		btn.MouseButton1Click:Connect(function()
-			switchTab(name)
-		end)
-		
-		Tabs[name] = { Button = btn, Content = content }
-		return content
-	end
-	
-	-- Create tabs
-	local UniversalContent = createTab("Universal", 1)
-	local GameContent = createTab(GAME_NAME, 2)
-	local GameSafeContent = createTab("Game (Safe)", 3)
-	
-	--============================================================
-	-- SECTION BUILDER
-	--============================================================
-	local function makeSection(parent, title, layoutOrder)
-		local section = create("Frame", {
-			LayoutOrder = layoutOrder,
-			BackgroundColor3 = Theme.Panel,
-			Size = UDim2.new(1, 0, 0, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-		}, { corner(8), stroke(Theme.Line, 1) })
-		section.Parent = parent
-		
-		create("TextLabel", {
-			BackgroundTransparency = 1,
-			Size = UDim2.new(1, -16, 0, 28),
-			Position = UDim2.new(0, 12, 0, 0),
-			Text = title,
-			Font = Enum.Font.GothamBold,
-			TextSize = 11,
-			TextColor3 = Theme.Ice,
-			TextXAlignment = Enum.TextXAlignment.Left,
-		}).Parent = section
-		
-		local body = create("Frame", {
-			BackgroundTransparency = 1,
-			Position = UDim2.new(0, 0, 0, 28),
-			Size = UDim2.new(1, 0, 0, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-		}, {
-			create("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder }),
-			create("UIPadding", { PaddingBottom = UDim.new(0, 6) }),
-		})
-		body.Parent = section
-		return section, body
-	end
-	
-	local function makeRow(parent, layoutOrder, label, sub)
-		local row = create("Frame", {
-			LayoutOrder = layoutOrder,
-			BackgroundTransparency = 1,
-			Size = UDim2.new(1, 0, 0, 40),
-		})
-		row.Parent = parent
-		
-		create("TextLabel", {
-			BackgroundTransparency = 1,
-			Size = UDim2.new(0.5, 0, 1, 0),
-			Position = UDim2.new(0, 12, 0, 0),
-			Text = label,
-			Font = Enum.Font.Gotham,
-			TextSize = 12,
-			TextColor3 = Theme.White,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextYAlignment = Enum.TextYAlignment.Top,
-		}).Parent = row
-		
-		if sub then
-			create("TextLabel", {
-				BackgroundTransparency = 1,
-				Size = UDim2.new(0.5, 0, 1, -16),
-				Position = UDim2.new(0, 12, 0, 16),
-				Text = sub,
-				Font = Enum.Font.Gotham,
-				TextSize = 10,
-				TextColor3 = Theme.Dim,
-				TextXAlignment = Enum.TextXAlignment.Left,
-			}).Parent = row
-		end
-		
-		return row
-	end
-	
-	local function makeToggle(parent, layoutOrder, label, sub, initialValue, callback)
-		local row = makeRow(parent, layoutOrder, label, sub)
-		
-		local switch = create("Frame", {
-			BackgroundColor3 = initialValue and Theme.IceBright or Theme.Panel2,
-			Size = UDim2.new(0, 34, 0, 18),
-			Position = UDim2.new(1, -46, 0.5, -9),
-		}, { corner(9) })
-		switch.Parent = row
-		
-		local knob = create("Frame", {
-			BackgroundColor3 = Color3.new(1, 1, 1),
-			Size = UDim2.new(0, 12, 0, 12),
-			Position = initialValue and UDim2.new(1, -16, 0.5, -6) or UDim2.new(0, 4, 0.5, -6),
-		}, { corner(6) })
-		knob.Parent = switch
-		
-		local state = initialValue
-		local btn = create("TextButton", {
-			BackgroundTransparency = 1,
-			Size = UDim2.new(1, 0, 1, 0),
-			Text = "",
-		})
-		btn.Parent = switch
-		
-		btn.MouseButton1Click:Connect(function()
-			state = not state
-			tween(switch, { BackgroundColor3 = state and Theme.IceBright or Theme.Panel2 }, 0.15)
-			tween(knob, { Position = state and UDim2.new(1, -16, 0.5, -6) or UDim2.new(0, 4, 0.5, -6) }, 0.15)
-			if callback then
-				callback(state)
-			end
-		end)
-		
-		return row
-	end
-	
-	local function makeSlider(parent, layoutOrder, label, sub, minVal, maxVal, initialVal, formatter, callback)
-		local row = makeRow(parent, layoutOrder, label, sub)
-		
-		local track = create("Frame", {
-			BackgroundColor3 = Theme.Panel2,
-			Size = UDim2.new(0, 140, 0, 3),
-			Position = UDim2.new(1, -195, 0.5, -1.5),
-		}, { corner(1.5) })
-		track.Parent = row
-		
-		local fill = create("Frame", {
-			BackgroundColor3 = Theme.IceBright,
-			Size = UDim2.new((initialVal - minVal) / (maxVal - minVal), 0, 1, 0),
-		}, { corner(1.5) })
-		fill.Parent = track
-		
-		local knob = create("Frame", {
-			BackgroundColor3 = Color3.new(1, 1, 1),
-			Size = UDim2.new(0, 12, 0, 12),
-			Position = UDim2.new((initialVal - minVal) / (maxVal - minVal), -6, 0.5, -6),
-			ZIndex = 2,
-		}, { corner(6) })
-		knob.Parent = track
-		
-		local valueLabel = create("TextLabel", {
-			BackgroundTransparency = 1,
-			Size = UDim2.new(0, 50, 0, 20),
-			Position = UDim2.new(1, -50, 0.5, -10),
-			Text = formatter and formatter(initialVal) or tostring(initialVal),
-			Font = Enum.Font.Code,
-			TextSize = 11,
-			TextColor3 = Theme.Ice,
-			TextXAlignment = Enum.TextXAlignment.Right,
-		})
-		valueLabel.Parent = row
-		
-		local dragging = false
-		local currentValue = initialVal
-		
-		local function updateValue(inputX)
-			local rel = math.clamp((inputX - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-			local val = math.floor(minVal + rel * (maxVal - minVal))
-			currentValue = val
-			fill.Size = UDim2.new(rel, 0, 1, 0)
-			knob.Position = UDim2.new(rel, -6, 0.5, -6)
-			valueLabel.Text = formatter and formatter(val) or tostring(val)
-			if callback then
-				callback(val)
-			end
-		end
-		
-		knob.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				dragging = true
-			end
-		end)
-		
-		UserInputService.InputEnded:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				dragging = false
-			end
-		end)
-		
-		UserInputService.InputChanged:Connect(function(input)
-			if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-				updateValue(input.Position.X)
-			end
-		end)
-		
-		return row
-	end
-	
-	--============================================================
-	-- UNIVERSAL TAB
-	--============================================================
-	local _, universalBody = makeSection(UniversalContent, "UNIVERSAL SETTINGS", 1)
-	
-	-- Walk Speed
-	local walkSpeedRow = makeRow(universalBody, 1, "Walk Speed Multiplier", "Multiply your walk speed")
-	local walkSpeedSlider = create("Frame", {
-		BackgroundColor3 = Theme.Panel2,
-		Size = UDim2.new(0, 140, 0, 3),
-		Position = UDim2.new(1, -195, 0.5, -1.5),
-	}, { corner(1.5) })
-	walkSpeedSlider.Parent = walkSpeedRow
-	local walkSpeedFill = create("Frame", {
-		BackgroundColor3 = Theme.IceBright,
-		Size = UDim2.new(0.5, 0, 1, 0),
-	}, { corner(1.5) })
-	walkSpeedFill.Parent = walkSpeedSlider
-	local walkSpeedKnob = create("Frame", {
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		Size = UDim2.new(0, 12, 0, 12),
-		Position = UDim2.new(0.5, -6, 0.5, -6),
-		ZIndex = 2,
-	}, { corner(6) })
-	walkSpeedKnob.Parent = walkSpeedSlider
-	local walkSpeedLabel = create("TextLabel", {
-		BackgroundTransparency = 1,
-		Size = UDim2.new(0, 50, 0, 20),
-		Position = UDim2.new(1, -50, 0.5, -10),
-		Text = "1.0x",
-		Font = Enum.Font.Code,
-		TextSize = 11,
-		TextColor3 = Theme.Ice,
-		TextXAlignment = Enum.TextXAlignment.Right,
-	})
-	walkSpeedLabel.Parent = walkSpeedRow
-	local walkSpeedDragging = false
-	local walkSpeedVal = 1.0
-	local function updateWalkSpeed(inputX)
-		local rel = math.clamp((inputX - walkSpeedSlider.AbsolutePosition.X) / walkSpeedSlider.AbsoluteSize.X, 0, 1)
-		local val = math.floor(0.5 + rel * 4 * 10) / 10
-		walkSpeedVal = val
-		walkSpeedFill.Size = UDim2.new(rel, 0, 1, 0)
-		walkSpeedKnob.Position = UDim2.new(rel, -6, 0.5, -6)
-		walkSpeedLabel.Text = string.format("%.1fx", val)
-		if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-			LocalPlayer.Character.Humanoid.WalkSpeed = 16 * val
-		end
-	end
-	walkSpeedKnob.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			walkSpeedDragging = true
-		end
-	end)
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			walkSpeedDragging = false
-		end
-	end)
-	UserInputService.InputChanged:Connect(function(input)
-		if walkSpeedDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			updateWalkSpeed(input.Position.X)
-		end
-	end)
-	
-	-- Jump Power
-	local jumpPowerRow = makeRow(universalBody, 2, "Jump Power Multiplier", "Multiply your jump power")
-	local jumpPowerSlider = create("Frame", {
-		BackgroundColor3 = Theme.Panel2,
-		Size = UDim2.new(0, 140, 0, 3),
-		Position = UDim2.new(1, -195, 0.5, -1.5),
-	}, { corner(1.5) })
-	jumpPowerSlider.Parent = jumpPowerRow
-	local jumpPowerFill = create("Frame", {
-		BackgroundColor3 = Theme.IceBright,
-		Size = UDim2.new(0.5, 0, 1, 0),
-	}, { corner(1.5) })
-	jumpPowerFill.Parent = jumpPowerSlider
-	local jumpPowerKnob = create("Frame", {
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		Size = UDim2.new(0, 12, 0, 12),
-		Position = UDim2.new(0.5, -6, 0.5, -6),
-		ZIndex = 2,
-	}, { corner(6) })
-	jumpPowerKnob.Parent = jumpPowerSlider
-	local jumpPowerLabel = create("TextLabel", {
-		BackgroundTransparency = 1,
-		Size = UDim2.new(0, 50, 0, 20),
-		Position = UDim2.new(1, -50, 0.5, -10),
-		Text = "1.0x",
-		Font = Enum.Font.Code,
-		TextSize = 11,
-		TextColor3 = Theme.Ice,
-		TextXAlignment = Enum.TextXAlignment.Right,
-	})
-	jumpPowerLabel.Parent = jumpPowerRow
-	local jumpPowerDragging = false
-	local jumpPowerVal = 1.0
-	local function updateJumpPower(inputX)
-		local rel = math.clamp((inputX - jumpPowerSlider.AbsolutePosition.X) / jumpPowerSlider.AbsoluteSize.X, 0, 1)
-		local val = math.floor(0.5 + rel * 4 * 10) / 10
-		jumpPowerVal = val
-		jumpPowerFill.Size = UDim2.new(rel, 0, 1, 0)
-		jumpPowerKnob.Position = UDim2.new(rel, -6, 0.5, -6)
-		jumpPowerLabel.Text = string.format("%.1fx", val)
-		if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-			LocalPlayer.Character.Humanoid.JumpPower = 50 * val
-		end
-	end
-	jumpPowerKnob.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			jumpPowerDragging = true
-		end
-	end)
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			jumpPowerDragging = false
-		end
-	end)
-	UserInputService.InputChanged:Connect(function(input)
-		if jumpPowerDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			updateJumpPower(input.Position.X)
-		end
-	end)
-	
-	--============================================================
-	-- GAME TAB - All Auto Collectors (No cooldown)
-	--============================================================
-	local _, gameBody = makeSection(GameContent, "AUTO COLLECTORS (No Cooldown)", 1)
-	
-	local function createAutoCollector(parent, collectorKey, label, color, eventPath, args, isFunction, functionName, collectorTable)
-		local collector = collectorTable[collectorKey]
-		local row = makeRow(parent, #parent:GetChildren() + 1, label, "Rapidly collect " .. label)
-		
-		local btn = create("TextButton", {
-			BackgroundColor3 = color or Theme.IceBright,
-			Size = UDim2.new(0, 90, 0, 28),
-			Position = UDim2.new(1, -102, 0.5, -14),
-			Text = "▶ START",
-			Font = Enum.Font.GothamBold,
-			TextSize = 12,
-			TextColor3 = Color3.fromRGB(0, 0, 0),
-			AutoButtonColor = false,
-		}, { corner(6) })
-		btn.Parent = row
-		
-		local counterLabel = create("TextLabel", {
-			BackgroundTransparency = 1,
-			Size = UDim2.new(0, 80, 0, 20),
-			Position = UDim2.new(1, -195, 0.5, -10),
-			Text = "0 collected",
-			Font = Enum.Font.Code,
-			TextSize = 10,
-			TextColor3 = Theme.Ice,
-			TextXAlignment = Enum.TextXAlignment.Right,
-		})
-		counterLabel.Parent = row
-		
-		local event = nil
-		local function findEvent()
-			if event then return event end
-			local current = ReplicatedStorage
-			for _, pathPart in ipairs(eventPath) do
-				current = current:FindFirstChild(pathPart)
-				if not current then break end
-			end
-			event = current
-			return event
-		end
-		
-		local function fireEvent()
-			local ev = findEvent()
-			if not ev then
-				showToast("Event not found: " .. table.concat(eventPath, "."), true)
-				return
-			end
-			
-			pcall(function()
-				if isFunction then
-					ev[functionName or "InvokeServer"](ev, unpack(args))
-				else
-					ev[functionName or "FireServer"](ev, unpack(args))
-				end
-				collector.count = collector.count + 1
-				counterLabel.Text = collector.count .. " collected"
-			end)
-		end
-		
-		btn.MouseButton1Click:Connect(function()
-			if collector.running then
-				collector.running = false
-				if collector.connection then
-					collector.connection:Disconnect()
-					collector.connection = nil
-				end
-				btn.Text = "▶ START"
-				btn.BackgroundColor3 = color or Theme.IceBright
-				showToast(label .. " stopped | " .. collector.count .. " collected")
-			else
-				if not findEvent() then
-					showToast("Event not found: " .. table.concat(eventPath, "."), true)
-					return
-				end
-				
-				collector.running = true
-				collector.count = 0
-				counterLabel.Text = "0 collected"
-				btn.Text = "■ STOP"
-				btn.BackgroundColor3 = Theme.Danger
-				showToast(label .. " started!")
-				
-				fireEvent()
-				collector.connection = RunService.Heartbeat:Connect(function()
-					if collector.running then
-						fireEvent()
-					end
-				end)
-			end
-		end)
-		
-		return row
-	end
-	
-	-- Normal mode collectors (no cooldown)
-	createAutoCollector(gameBody, "plus40", "+40 Speed", Theme.Good, {"rEvents", "orbEvent"}, {"collectOrb", "Red Orb", "City"}, false, "FireServer", autoCollectors)
-	createAutoCollector(gameBody, "gem", "Gem", Theme.Gold, {"rEvents", "orbEvent"}, {"collectOrb", "Gem", "City"}, false, "FireServer", autoCollectors)
-	createAutoCollector(gameBody, "plus10", "+10 Speed", Theme.Orange, {"rEvents", "orbEvent"}, {"collectOrb", "Orange Orb", "City"}, false, "FireServer", autoCollectors)
-	createAutoCollector(gameBody, "exp", "+1 EXP", Theme.Purple, {"rEvents", "orbEvent"}, {"collectOrb", "Yellow Orb", "City"}, false, "FireServer", autoCollectors)
-	createAutoCollector(gameBody, "purpleCrystal", "Purple Crystal (1k Gems)", Theme.Purple, {"rEvents", "openCrystalRemote"}, {"openCrystal", "Purple Crystal"}, true, "InvokeServer", autoCollectors)
-	createAutoCollector(gameBody, "lightningCrystal", "Lightning Crystal (2.5k Gems)", Theme.IceBright, {"rEvents", "openCrystalRemote"}, {"openCrystal", "Lightning Crystal"}, true, "InvokeServer", autoCollectors)
-	createAutoCollector(gameBody, "redCrystal", "Red Crystal (300 Gems)", Theme.Danger, {"rEvents", "openCrystalRemote"}, {"openCrystal", "Red Crystal"}, true, "InvokeServer", autoCollectors)
-	createAutoCollector(gameBody, "rebirth", "Auto Rebirth", Theme.Pink, {"rEvents", "rebirthEvent"}, {"rebirthRequest"}, false, "FireServer", autoCollectors)
-	
-	-- Claim Gift (normal)
-	local claimGiftRow = makeRow(gameBody, #gameBody:GetChildren() + 1, "Claim All Gifts", "Claim gifts 1-8 rapidly")
-	local claimGiftBtn = create("TextButton", {
-		BackgroundColor3 = Theme.Gold,
-		Size = UDim2.new(0, 90, 0, 28),
-		Position = UDim2.new(1, -102, 0.5, -14),
-		Text = "▶ START",
-		Font = Enum.Font.GothamBold,
-		TextSize = 12,
-		TextColor3 = Color3.fromRGB(0, 0, 0),
-		AutoButtonColor = false,
-	}, { corner(6) })
-	claimGiftBtn.Parent = claimGiftRow
-	
-	local claimGiftCounter = create("TextLabel", {
-		BackgroundTransparency = 1,
-		Size = UDim2.new(0, 80, 0, 20),
-		Position = UDim2.new(1, -195, 0.5, -10),
-		Text = "0 claimed",
-		Font = Enum.Font.Code,
-		TextSize = 10,
-		TextColor3 = Theme.Ice,
-		TextXAlignment = Enum.TextXAlignment.Right,
-	})
-	claimGiftCounter.Parent = claimGiftRow
-	
-	local giftEvent = nil
-	local function findGiftEvent()
-		if giftEvent then return giftEvent end
-		local current = ReplicatedStorage
-		local path = {"rEvents", "freeGiftClaimRemote"}
-		for _, pathPart in ipairs(path) do
-			current = current:FindFirstChild(pathPart)
-			if not current then break end
-		end
-		giftEvent = current
-		return giftEvent
-	end
-	
-	local function fireGiftClaim()
-		local ev = findGiftEvent()
-		if not ev then
-			showToast("Gift event not found!", true)
-			return
-		end
-		
-		for i = 1, 8 do
-			pcall(function()
-				ev:InvokeServer("claimGift", i)
-				autoCollectors.claimGift.count = autoCollectors.claimGift.count + 1
-				claimGiftCounter.Text = autoCollectors.claimGift.count .. " claimed"
-			end)
-		end
-	end
-	
-	claimGiftBtn.MouseButton1Click:Connect(function()
-		local collector = autoCollectors.claimGift
-		if collector.running then
-			collector.running = false
-			if collector.connection then
-				collector.connection:Disconnect()
-				collector.connection = nil
-			end
-			claimGiftBtn.Text = "▶ START"
-			claimGiftBtn.BackgroundColor3 = Theme.Gold
-			showToast("Claim Gifts stopped | " .. collector.count .. " claimed")
-		else
-			if not findGiftEvent() then
-				showToast("Gift event not found!", true)
-				return
-			end
-			
-			collector.running = true
-			collector.count = 0
-			claimGiftCounter.Text = "0 claimed"
-			claimGiftBtn.Text = "■ STOP"
-			claimGiftBtn.BackgroundColor3 = Theme.Danger
-			showToast("Claim Gifts started!")
-			
-			fireGiftClaim()
-			collector.connection = RunService.Heartbeat:Connect(function()
-				if collector.running then
-					fireGiftClaim()
-				end
-			end)
-		end
-	end)
-	
-	--============================================================
-	-- GAME (SAFE) TAB - With 0.1 second cooldown
-	--============================================================
-	local _, gameSafeBody = makeSection(GameSafeContent, "AUTO COLLECTORS (0.1s Cooldown)", 1)
-	
-	local function createSafeCollector(parent, collectorKey, label, color, eventPath, args, isFunction, functionName)
-		local collector = safeCollectors[collectorKey]
-		local row = makeRow(parent, #parent:GetChildren() + 1, label, "Collect with 0.1s cooldown")
-		
-		local btn = create("TextButton", {
-			BackgroundColor3 = color or Theme.IceBright,
-			Size = UDim2.new(0, 90, 0, 28),
-			Position = UDim2.new(1, -102, 0.5, -14),
-			Text = "▶ START",
-			Font = Enum.Font.GothamBold,
-			TextSize = 12,
-			TextColor3 = Color3.fromRGB(0, 0, 0),
-			AutoButtonColor = false,
-		}, { corner(6) })
-		btn.Parent = row
-		
-		local counterLabel = create("TextLabel", {
-			BackgroundTransparency = 1,
-			Size = UDim2.new(0, 80, 0, 20),
-			Position = UDim2.new(1, -195, 0.5, -10),
-			Text = "0 collected",
-			Font = Enum.Font.Code,
-			TextSize = 10,
-			TextColor3 = Theme.Ice,
-			TextXAlignment = Enum.TextXAlignment.Right,
-		})
-		counterLabel.Parent = row
-		
-		local event = nil
-		local function findEvent()
-			if event then return event end
-			local current = ReplicatedStorage
-			for _, pathPart in ipairs(eventPath) do
-				current = current:FindFirstChild(pathPart)
-				if not current then break end
-			end
-			event = current
-			return event
-		end
-		
-		local function fireEvent()
-			local ev = findEvent()
-			if not ev then
-				showToast("Event not found: " .. table.concat(eventPath, "."), true)
-				return
-			end
-			
-			local now = tick()
-			if now - collector.lastFire < collector.cooldown then
-				return
-			end
-			collector.lastFire = now
-			
-			pcall(function()
-				if isFunction then
-					ev[functionName or "InvokeServer"](ev, unpack(args))
-				else
-					ev[functionName or "FireServer"](ev, unpack(args))
-				end
-				collector.count = collector.count + 1
-				counterLabel.Text = collector.count .. " collected"
-			end)
-		end
-		
-		btn.MouseButton1Click:Connect(function()
-			if collector.running then
-				collector.running = false
-				if collector.connection then
-					collector.connection:Disconnect()
-					collector.connection = nil
-				end
-				btn.Text = "▶ START"
-				btn.BackgroundColor3 = color or Theme.IceBright
-				showToast(label .. " stopped | " .. collector.count .. " collected")
-			else
-				if not findEvent() then
-					showToast("Event not found: " .. table.concat(eventPath, "."), true)
-					return
-				end
-				
-				collector.running = true
-				collector.count = 0
-				collector.lastFire = 0
-				counterLabel.Text = "0 collected"
-				btn.Text = "■ STOP"
-				btn.BackgroundColor3 = Theme.Danger
-				showToast(label .. " started (0.1s cooldown)!")
-				
-				fireEvent()
-				collector.connection = RunService.Heartbeat:Connect(function()
-					if collector.running then
-						fireEvent()
-					end
-				end)
-			end
-		end)
-		
-		return row
-	end
-	
-	-- Safe mode collectors (0.1s cooldown)
-	createSafeCollector(gameSafeBody, "plus40", "+40 Speed", Theme.Good, {"rEvents", "orbEvent"}, {"collectOrb", "Red Orb", "City"}, false, "FireServer")
-	createSafeCollector(gameSafeBody, "gem", "Gem", Theme.Gold, {"rEvents", "orbEvent"}, {"collectOrb", "Gem", "City"}, false, "FireServer")
-	createSafeCollector(gameSafeBody, "plus10", "+10 Speed", Theme.Orange, {"rEvents", "orbEvent"}, {"collectOrb", "Orange Orb", "City"}, false, "FireServer")
-	createSafeCollector(gameSafeBody, "exp", "+1 EXP", Theme.Purple, {"rEvents", "orbEvent"}, {"collectOrb", "Yellow Orb", "City"}, false, "FireServer")
-	createSafeCollector(gameSafeBody, "purpleCrystal", "Purple Crystal (1k Gems)", Theme.Purple, {"rEvents", "openCrystalRemote"}, {"openCrystal", "Purple Crystal"}, true, "InvokeServer")
-	createSafeCollector(gameSafeBody, "lightningCrystal", "Lightning Crystal (2.5k Gems)", Theme.IceBright, {"rEvents", "openCrystalRemote"}, {"openCrystal", "Lightning Crystal"}, true, "InvokeServer")
-	createSafeCollector(gameSafeBody, "redCrystal", "Red Crystal (300 Gems)", Theme.Danger, {"rEvents", "openCrystalRemote"}, {"openCrystal", "Red Crystal"}, true, "InvokeServer")
-	createSafeCollector(gameSafeBody, "rebirth", "Auto Rebirth", Theme.Pink, {"rEvents", "rebirthEvent"}, {"rebirthRequest"}, false, "FireServer")
-	
-	-- Claim Gift (safe)
-	local claimGiftSafeRow = makeRow(gameSafeBody, #gameSafeBody:GetChildren() + 1, "Claim All Gifts (Safe)", "Claim gifts with 0.1s cooldown")
-	local claimGiftSafeBtn = create("TextButton", {
-		BackgroundColor3 = Theme.Gold,
-		Size = UDim2.new(0, 90, 0, 28),
-		Position = UDim2.new(1, -102, 0.5, -14),
-		Text = "▶ START",
-		Font = Enum.Font.GothamBold,
-		TextSize = 12,
-		TextColor3 = Color3.fromRGB(0, 0, 0),
-		AutoButtonColor = false,
-	}, { corner(6) })
-	claimGiftSafeBtn.Parent = claimGiftSafeRow
-	
-	local claimGiftSafeCounter = create("TextLabel", {
-		BackgroundTransparency = 1,
-		Size = UDim2.new(0, 80, 0, 20),
-		Position = UDim2.new(1, -195, 0.5, -10),
-		Text = "0 claimed",
-		Font = Enum.Font.Code,
-		TextSize = 10,
-		TextColor3 = Theme.Ice,
-		TextXAlignment = Enum.TextXAlignment.Right,
-	})
-	claimGiftSafeCounter.Parent = claimGiftSafeRow
-	
-	local function fireGiftClaimSafe()
-		local ev = findGiftEvent()
-		if not ev then
-			showToast("Gift event not found!", true)
-			return
-		end
-		
-		local collector = safeCollectors.claimGift
-		local now = tick()
-		if now - collector.lastFire < collector.cooldown then
-			return
-		end
-		collector.lastFire = now
-		
-		for i = 1, 8 do
-			pcall(function()
-				ev:InvokeServer("claimGift", i)
-				collector.count = collector.count + 1
-				claimGiftSafeCounter.Text = collector.count .. " claimed"
-			end)
-		end
-	end
-	
-	claimGiftSafeBtn.MouseButton1Click:Connect(function()
-		local collector = safeCollectors.claimGift
-		if collector.running then
-			collector.running = false
-			if collector.connection then
-				collector.connection:Disconnect()
-				collector.connection = nil
-			end
-			claimGiftSafeBtn.Text = "▶ START"
-			claimGiftSafeBtn.BackgroundColor3 = Theme.Gold
-			showToast("Claim Gifts (Safe) stopped | " .. collector.count .. " claimed")
-		else
-			if not findGiftEvent() then
-				showToast("Gift event not found!", true)
-				return
-			end
-			
-			collector.running = true
-			collector.count = 0
-			collector.lastFire = 0
-			claimGiftSafeCounter.Text = "0 claimed"
-			claimGiftSafeBtn.Text = "■ STOP"
-			claimGiftSafeBtn.BackgroundColor3 = Theme.Danger
-			showToast("Claim Gifts (Safe) started (0.1s cooldown)!")
-			
-			fireGiftClaimSafe()
-			collector.connection = RunService.Heartbeat:Connect(function()
-				if collector.running then
-					fireGiftClaimSafe()
-				end
-			end)
-		end
-	end)
-	
-	--============================================================
-	-- COUNTDOWN
-	--============================================================
-	local countdownConn = nil
-	local function startCountdown(expiryUnix)
-		if countdownConn then
-			countdownConn:Disconnect()
-		end
-		countdownConn = RunService.Heartbeat:Connect(function()
-			local remaining = expiryUnix - os.time()
-			if remaining <= 0 then
-				countdownConn:Disconnect()
-				countdownConn = nil
-				Dashboard.Visible = false
-				GateFrame.Visible = true
-				userData = {}
-				saveUserData(userData)
-				showToast("Access expired. Enter your key again.", true)
-				return
-			end
-			CountdownLabel.Text = "KEY ACTIVE · " .. formatHMS(remaining)
-		end)
-	end
-	
-	local function showDashboard(expiryUnix)
-		GateFrame.Visible = false
-		Dashboard.Visible = true
-		switchTab(GAME_NAME)
-		startCountdown(expiryUnix)
-	end
-	
-	--============================================================
-	-- KEY LOGIC
-	--============================================================
-	UnlockBtn.MouseButton1Click:Connect(function()
-		local entered = KeyBox.Text
-		if entered ~= "" and entered == MASTER_KEY then
-			local expiry = os.time() + DAY_SECONDS
-			sessionUnlockExpiry = expiry
-			
-			userData = {
-				userId = LocalPlayer.UserId,
-				expiry = expiry,
-				key = entered,
-				minWindowPosition = minWindowPosition
-			}
-			saveUserData(userData)
-			
-				ErrorLabel.Visible = false
-			showToast("Key accepted — 24 hour access granted.")
-			task.delay(0.3, function()
-				showDashboard(expiry)
-			end)
-		else
-			ErrorLabel.Text = "Invalid key."
-			ErrorLabel.Visible = true
-			local originalPos = KeyBox.Position
-			for _, offset in ipairs({ -6, 6, -4, 4, 0 }) do
-				tween(KeyBox, { Position = originalPos + UDim2.new(0, offset, 0, 0) }, 0.05)
-				task.wait(0.05)
-			end
-		end
-	end)
-	
-	DiscordBtn.MouseButton1Click:Connect(function()
-		local copied = false
-		if typeof(setclipboard) == "function" then
-			local success = pcall(function()
-				setclipboard(DISCORD_LINK)
-			end)
-			copied = success
-		end
-		
-		if copied then
-			showToast("Discord link copied!")
-		else
-			showToast("Discord: " .. DISCORD_LINK, false)
-		end
-	end)
-	
-	ManageLabel.MouseButton1Click:Connect(function()
-		NewKeyBox.Text = MASTER_KEY
-		ModalOverlay.Visible = true
-	end)
-	
-	CancelBtn.MouseButton1Click:Connect(function()
-		ModalOverlay.Visible = false
-	end)
-	
-	SaveKeyBtn.MouseButton1Click:Connect(function()
-		local newKey = NewKeyBox.Text
-		if newKey == "" then
-			showToast("Enter a key before saving.", true)
-			return
-		end
-		showToast("Key updated! Restart script for changes.", true)
-		ModalOverlay.Visible = false
-	end)
-	
-	--============================================================
-	-- KEYBOARD SHORTCUTS
-	--============================================================
-	UserInputService.InputBegan:Connect(function(input, gameProcessed)
-		if gameProcessed then return end
-		
-		if input.KeyCode == Enum.KeyCode.F4 then
-			if MainWindow.Visible then
-				MainWindow.Visible = false
-				MinWindow.Visible = false
-				for _, collector in pairs(autoCollectors) do
-					if collector.running then
-						collector.running = false
-						if collector.connection then
-							collector.connection:Disconnect()
-							collector.connection = nil
-						end
-					end
-				end
-				for _, collector in pairs(safeCollectors) do
-					if collector.running then
-						collector.running = false
-						if collector.connection then
-							collector.connection:Disconnect()
-							collector.connection = nil
-						end
-					end
-				end
-			else
-				MainWindow.Visible = true
-				if sessionUnlockExpiry and sessionUnlockExpiry > os.time() then
-					showDashboard(sessionUnlockExpiry)
-				end
-			end
-		end
-	end)
-	
-	--============================================================
-	-- INIT
-	--============================================================
-	if sessionUnlockExpiry and sessionUnlockExpiry > os.time() then
-		showDashboard(sessionUnlockExpiry)
-	else
-		userData = {}
-		saveUserData(userData)
-	end
-	
-	print("[VITALITY] Vitality Script's (Legend's of Speed) initialized!")
-	print("[VITALITY] F4 to toggle window")
-	print("[VITALITY] Window controls: Minimize [−] Close [✕]")
+
+	outTween:Play()
+	inTween:Play()
+	inTween.Completed:Wait()
+
+	oldPage.Visible = false
+	oldPage.Position = UDim2.new(0, 0, 0, 0)
+	currentPage = newPage
+	switching = false
 end
 
--- Execute
-local success, err = pcall(setupVitality)
-if not success then
-	warn("[VITALITY] Failed: " .. tostring(err))
-else
-	print("[VITALITY] Ready!")
+local function makeHeader(parent)
+	local headerGroup = Instance.new("Frame")
+	headerGroup.Parent = parent
+	headerGroup.BackgroundTransparency = 1
+	headerGroup.AnchorPoint = Vector2.new(0.5, 0)
+	headerGroup.Position = UDim2.new(0.5, 0, 0.06, 0)
+	headerGroup.Size = UDim2.new(0, 260, 0, 52)
+	headerGroup.BorderSizePixel = 0
+
+	local textGroup = Instance.new("Frame")
+	textGroup.Parent = headerGroup
+	textGroup.BackgroundTransparency = 1
+	textGroup.AnchorPoint = Vector2.new(0.5, 0)
+	textGroup.Position = UDim2.new(0.5, 28, 0, 0)
+	textGroup.Size = UDim2.new(0, 140, 0, 34)
+	textGroup.BorderSizePixel = 0
+
+	local title = Instance.new("TextLabel")
+	title.Parent = textGroup
+	title.BackgroundTransparency = 1
+	title.Position = UDim2.new(0, 0, 0, 0)
+	title.Size = UDim2.new(1, 0, 0, 22)
+	title.Font = Enum.Font.GothamBold
+	title.Text = "Vitality"
+	title.TextColor3 = Color3.new(1, 1, 1)
+	title.TextSize = 18
+	title.TextXAlignment = Enum.TextXAlignment.Center
+	title.BorderSizePixel = 0
+
+	local subtitle = Instance.new("TextLabel")
+	subtitle.Parent = textGroup
+	subtitle.BackgroundTransparency = 1
+	subtitle.Position = UDim2.new(0, 0, 0, 19)
+	subtitle.Size = UDim2.new(1, 0, 0, 14)
+	subtitle.Font = Enum.Font.GothamBold
+	subtitle.Text = "BEST ROBLOX HUB"
+	subtitle.TextColor3 = Color3.new(1, 1, 1)
+	subtitle.TextSize = 10
+	subtitle.TextXAlignment = Enum.TextXAlignment.Center
+	subtitle.BorderSizePixel = 0
+
+	local logo = Instance.new("ImageLabel")
+	logo.Parent = headerGroup
+	logo.BackgroundTransparency = 1
+	logo.AnchorPoint = Vector2.new(1, 0.5)
+	logo.Position = UDim2.new(0.5, -30, 0.5, -5)
+	logo.Size = UDim2.new(0, 34, 0, 34)
+	logo.Image = "rbxassetid://106850780184145"
+	logo.BorderSizePixel = 0
 end
+
+makeHeader(getKeyPage)
+makeHeader(redeemPage)
+
+local function makeTabs(parent, redeemActive)
+	local tabWidth = 100
+	local tabHeight = 38
+	local gap = 12
+	local totalWidth = (tabWidth * 2) + gap
+	local startX = 0.5
+	local startOffset = -(totalWidth / 2)
+
+	local redeemButton = Instance.new("TextButton")
+	redeemButton.Parent = parent
+	redeemButton.Position = UDim2.new(startX, startOffset, 0.23, 0)
+	redeemButton.Size = UDim2.new(0, tabWidth, 0, tabHeight)
+	redeemButton.BackgroundColor3 = redeemActive and Color3.fromRGB(40, 190, 207) or Color3.fromRGB(14, 14, 16)
+	redeemButton.Font = redeemActive and Enum.Font.GothamBold or Enum.Font.Gotham
+	redeemButton.Text = "Redeem Key"
+	redeemButton.TextColor3 = redeemActive and Color3.new(1, 1, 1) or Color3.fromRGB(170, 170, 170)
+	redeemButton.TextSize = 13
+	redeemButton.BorderSizePixel = 0
+
+	local redeemCorner = Instance.new("UICorner")
+	redeemCorner.Parent = redeemButton
+	redeemCorner.CornerRadius = UDim.new(0, 6)
+
+	local getButton = Instance.new("TextButton")
+	getButton.Parent = parent
+	getButton.Position = UDim2.new(startX, startOffset + tabWidth + gap, 0.23, 0)
+	getButton.Size = UDim2.new(0, tabWidth, 0, tabHeight)
+	getButton.BackgroundColor3 = redeemActive and Color3.fromRGB(14, 14, 16) or Color3.fromRGB(40, 190, 207)
+	getButton.Font = redeemActive and Enum.Font.Gotham or Enum.Font.GothamBold
+	getButton.Text = "Get Key"
+	getButton.TextColor3 = redeemActive and Color3.fromRGB(170, 170, 170) or Color3.new(1, 1, 1)
+	getButton.TextSize = 13
+	getButton.BorderSizePixel = 0
+
+	local getCorner = Instance.new("UICorner")
+	getCorner.Parent = getButton
+	getCorner.CornerRadius = UDim.new(0, 6)
+
+	return redeemButton, getButton
+end
+
+local getKeyTabRedeem, getKeyTabGet = makeTabs(getKeyPage, false)
+local redeemTabRedeem, redeemTabGet = makeTabs(redeemPage, true)
+
+local getKeyImage = Instance.new("ImageLabel")
+getKeyImage.Parent = getKeyPage
+getKeyImage.BackgroundTransparency = 1
+getKeyImage.AnchorPoint = Vector2.new(0.5, 0)
+getKeyImage.Position = UDim2.new(0.5, 0, 0.4, 0)
+getKeyImage.Size = UDim2.new(0, 74, 0, 73)
+getKeyImage.Image = "rbxassetid://80213665896573"
+getKeyImage.BorderSizePixel = 0
+
+local copyLink = Instance.new("TextButton")
+copyLink.Parent = getKeyPage
+copyLink.AnchorPoint = Vector2.new(0.5, 0)
+copyLink.Position = UDim2.new(0.5, 0, 0.65, 0)
+copyLink.Size = UDim2.new(0, 230, 0, 45)
+copyLink.BackgroundColor3 = Color3.fromRGB(40, 190, 207)
+copyLink.Font = Enum.Font.GothamBold
+copyLink.Text = "Copy Discord Link"
+copyLink.TextColor3 = Color3.new(1, 1, 1)
+copyLink.TextSize = 20
+copyLink.BorderSizePixel = 0
+
+local copyLinkCorner = Instance.new("UICorner")
+copyLinkCorner.Parent = copyLink
+copyLinkCorner.CornerRadius = UDim.new(0, 6)
+
+local getKeyInfo = Instance.new("TextLabel")
+getKeyInfo.Parent = getKeyPage
+getKeyInfo.BackgroundTransparency = 1
+getKeyInfo.AnchorPoint = Vector2.new(0.5, 0)
+getKeyInfo.Position = UDim2.new(0.5, 0, 0.80, 0)
+getKeyInfo.Size = UDim2.new(0, 240, 0, 40)
+getKeyInfo.Font = Enum.Font.Gotham
+getKeyInfo.Text = "Keys reset every 24 hours!\nJoin Discord to get today's key."
+getKeyInfo.TextColor3 = Color3.fromRGB(130, 130, 130)
+getKeyInfo.TextSize = 11
+getKeyInfo.TextWrapped = true
+getKeyInfo.TextXAlignment = Enum.TextXAlignment.Center
+getKeyInfo.BorderSizePixel = 0
+
+local redeemImage = Instance.new("ImageLabel")
+redeemImage.Parent = redeemPage
+redeemImage.BackgroundTransparency = 1
+redeemImage.AnchorPoint = Vector2.new(0.5, 0)
+redeemImage.Position = UDim2.new(0.5, 0, 0.4, 0)
+redeemImage.Size = UDim2.new(0, 74, 0, 73)
+redeemImage.Image = "rbxassetid://85454232851622"
+redeemImage.BorderSizePixel = 0
+
+local keyBox = Instance.new("TextBox")
+keyBox.Parent = redeemPage
+keyBox.BackgroundColor3 = Color3.fromRGB(14, 15, 17)
+keyBox.BorderSizePixel = 0
+keyBox.AnchorPoint = Vector2.new(0.5, 0)
+keyBox.Position = UDim2.new(0.5, 0, 0.617, 0)
+keyBox.Size = UDim2.new(0, 231, 0, 44)
+keyBox.Font = Enum.Font.Gotham
+keyBox.PlaceholderText = "Enter 24h Key"
+keyBox.PlaceholderColor3 = Color3.fromRGB(140, 140, 140)
+keyBox.Text = "" -- Always blank for manual entry
+keyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+keyBox.TextSize = 14
+
+local keyBoxCorner = Instance.new("UICorner")
+keyBoxCorner.Parent = keyBox
+keyBoxCorner.CornerRadius = UDim.new(0, 6)
+
+local launch = Instance.new("TextButton")
+launch.Parent = redeemPage
+launch.BackgroundColor3 = Color3.fromRGB(40, 190, 207)
+launch.BorderSizePixel = 0
+launch.AnchorPoint = Vector2.new(0.5, 0)
+launch.Position = UDim2.new(0.5, 0, 0.78, 0)
+launch.Size = UDim2.new(0, 231, 0, 44)
+launch.Font = Enum.Font.GothamBold
+launch.Text = "Launch"
+launch.TextColor3 = Color3.fromRGB(255, 255, 255)
+launch.TextSize = 21
+
+local launchCorner = Instance.new("UICorner")
+launchCorner.Parent = launch
+launchCorner.CornerRadius = UDim.new(0, 6)
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Parent = redeemPage
+statusLabel.BackgroundTransparency = 1
+statusLabel.AnchorPoint = Vector2.new(0.5, 0)
+statusLabel.Position = UDim2.new(0.5, 0, 0.91, 0)
+statusLabel.Size = UDim2.new(0, 340, 0, 24)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.Text = ""
+statusLabel.TextColor3 = Color3.fromRGB(170, 170, 170)
+statusLabel.TextSize = 12
+statusLabel.TextXAlignment = Enum.TextXAlignment.Center
+statusLabel.TextWrapped = true
+statusLabel.BorderSizePixel = 0
+
+local barWidth = 30
+local barMinHeight = 55
+local barMaxHeight = 125
+local barY = 0.60
+
+local activeColor = Color3.fromRGB(40, 190, 207)
+local idleColor = Color3.fromRGB(33, 159, 173)
+
+local bar1 = Instance.new("Frame")
+bar1.Parent = loadingPage
+bar1.BackgroundColor3 = activeColor
+bar1.BorderSizePixel = 0
+bar1.AnchorPoint = Vector2.new(0.5, 1)
+bar1.Position = UDim2.new(0.42, 0, barY, 0)
+bar1.Size = UDim2.new(0, barWidth, 0, barMinHeight)
+
+local bar1Corner = Instance.new("UICorner")
+bar1Corner.Parent = bar1
+bar1Corner.CornerRadius = UDim.new(0, 6)
+
+local bar2 = Instance.new("Frame")
+bar2.Parent = loadingPage
+bar2.BackgroundColor3 = idleColor
+bar2.BorderSizePixel = 0
+bar2.AnchorPoint = Vector2.new(0.5, 1)
+bar2.Position = UDim2.new(0.50, 0, barY, 0)
+bar2.Size = UDim2.new(0, barWidth, 0, barMinHeight)
+
+local bar2Corner = Instance.new("UICorner")
+bar2Corner.Parent = bar2
+bar2Corner.CornerRadius = UDim.new(0, 6)
+
+local bar3 = Instance.new("Frame")
+bar3.Parent = loadingPage
+bar3.BackgroundColor3 = idleColor
+bar3.BorderSizePixel = 0
+bar3.AnchorPoint = Vector2.new(0.5, 1)
+bar3.Position = UDim2.new(0.58, 0, barY, 0)
+bar3.Size = UDim2.new(0, barWidth, 0, barMinHeight)
+
+local bar3Corner = Instance.new("UICorner")
+bar3Corner.Parent = bar3
+bar3Corner.CornerRadius = UDim.new(0, 6)
+
+local loadingText = Instance.new("TextLabel")
+loadingText.Parent = loadingPage
+loadingText.BackgroundTransparency = 1
+loadingText.AnchorPoint = Vector2.new(0.5, 0)
+loadingText.Position = UDim2.new(0.5, 0, 0.76, 0)
+loadingText.Size = UDim2.new(0, 340, 0, 50)
+loadingText.Font = Enum.Font.Gotham
+loadingText.Text = "Verifying Key..."
+loadingText.TextColor3 = Color3.new(1, 1, 1)
+loadingText.TextSize = 17
+loadingText.TextXAlignment = Enum.TextXAlignment.Center
+loadingText.TextWrapped = true
+loadingText.BorderSizePixel = 0
+
+local function setStatus(text, color)
+	statusLabel.Text = text or ""
+	statusLabel.TextColor3 = color or Color3.fromRGB(170, 170, 170)
+end
+
+local function setBarColors(activeIndex)
+	bar1.BackgroundColor3 = activeIndex == 1 and activeColor or idleColor
+	bar2.BackgroundColor3 = activeIndex == 2 and activeColor or idleColor
+	bar3.BackgroundColor3 = activeIndex == 3 and activeColor or idleColor
+end
+
+local function tweenBar(bar, height, duration)
+	local tween = TweenService:Create(bar, TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+		Size = UDim2.new(0, barWidth, 0, height)
+	})
+	tween:Play()
+	return tween
+end
+
+local function startLoadingAnimation()
+	loadingAnimationId += 1
+	local token = loadingAnimationId
+
+	bar1.Size = UDim2.new(0, barWidth, 0, barMinHeight)
+	bar2.Size = UDim2.new(0, barWidth, 0, barMinHeight)
+	bar3.Size = UDim2.new(0, barWidth, 0, barMinHeight)
+	setBarColors(1)
+
+	task.spawn(function()
+		local states = {
+			{1, {barMaxHeight, barMinHeight, barMinHeight}},
+			{2, {barMinHeight, barMaxHeight, barMinHeight}},
+			{3, {barMinHeight, barMinHeight, barMaxHeight}},
+		}
+
+		local index = 1
+
+		while loadingAnimationId == token and loadingPage.Visible do
+			local activeIndex = states[index][1]
+			local heights = states[index][2]
+
+			setBarColors(activeIndex)
+
+			local t1 = tweenBar(bar1, heights[1], 0.6)
+			local t2 = tweenBar(bar2, heights[2], 0.6)
+			local t3 = tweenBar(bar3, heights[3], 0.6)
+
+			t1.Completed:Wait()
+
+			if loadingAnimationId ~= token or not loadingPage.Visible then
+				break
+			end
+
+			index += 1
+			if index > #states then
+				index = 1
+			end
+		end
+	end)
+end
+
+local function stopLoadingAnimation()
+	loadingAnimationId += 1
+end
+
+close.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
+end)
+
+getKeyTabRedeem.MouseButton1Click:Connect(function()
+	setStatus("")
+	showPage(redeemPage, "left")
+end)
+
+redeemTabGet.MouseButton1Click:Connect(function()
+	setStatus("")
+	showPage(getKeyPage, "right")
+end)
+
+copyLink.MouseButton1Click:Connect(function()
+	if setclipboard then
+		setclipboard(DISCORD_LINK)
+		copyLink.Text = "Copied!"
+		task.delay(1.2, function()
+			if copyLink and copyLink.Parent then
+				copyLink.Text = "Copy Discord Link"
+			end
+		end)
+	else
+		copyLink.Text = "Clipboard Unavailable"
+		task.delay(1.2, function()
+			if copyLink and copyLink.Parent then
+				copyLink.Text = "Copy Discord Link"
+			end
+		end)
+	end
+end)
+
+launch.MouseButton1Click:Connect(function()
+	local inputKey = keyBox.Text
+	showPage(loadingPage, "left")
+	startLoadingAnimation()
+
+	task.wait(1)
+
+	if inputKey == CORRECT_KEY then
+		loadingText.Text = "Key valid, launching..."
+		task.wait(1)
+		stopLoadingAnimation()
+		screenGui:Destroy()
+		pcall(loadMainScript)
+	else
+		stopLoadingAnimation()
+		showPage(redeemPage, "right")
+		setStatus("Invalid or Expired Key! Check Discord for today's key.", Color3.fromRGB(255, 80, 80))
+	end
+end)
+
+showPage(redeemPage, "right")
