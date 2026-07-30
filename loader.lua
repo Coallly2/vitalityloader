@@ -1,6 +1,7 @@
 local Scripts = {
     [1119466531] = "https://raw.githubusercontent.com/Coallly2/vitalityloader/Loader/1119466531.lua",
-    [10256263771] = "https://raw.githubusercontent.com/Coallly2/vitalityloader/Loader/10256263771.lua"
+    [10256263771] = "https://raw.githubusercontent.com/Coallly2/vitalityloader/Loader/10256263771.lua",
+    [10098095975] = "https://raw.githubusercontent.com/Coallly2/vitalityloader/Loader/10098095975.lua"
 }
 
 local id = tonumber(game.GameId)
