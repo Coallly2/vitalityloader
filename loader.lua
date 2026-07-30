@@ -1,6 +1,6 @@
 local Scripts = {
-    [1119466531] = "https://raw.githubusercontent.com/Coallly2/vitalityloader/Loader/3101667897.lua",
-    [136107936984073] = "https://raw.githubusercontent.com/Coallly2/vitalityloader/Loader/136107936984073.lua"
+    [1119466531] = "https://raw.githubusercontent.com/Coallly2/vitalityloader/Loader/1119466531.lua",
+    [10256263771] = "https://raw.githubusercontent.com/Coallly2/vitalityloader/Loader/10256263771.lua"
 }
 
 local url = Scripts[game.GameId]
